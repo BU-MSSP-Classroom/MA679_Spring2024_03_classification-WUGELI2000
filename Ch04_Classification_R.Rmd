@@ -229,11 +229,12 @@ Your code:
 #
 ```
 
-Your answer:
+Your answer: Classification. Provides a detailed breakdown of the true positives, false positives, true negatives, and false negatives, which can be insightful for understanding the model performance in each class.
 
 ~~~
 Please write your answer in full sentences.
 
+A: I will use confusion matrix.
 
 ~~~
 
@@ -241,11 +242,13 @@ Q2. What was your best performing model?
 
 Your code:
 ```{r,echo=TRUE}
-#
-#
+fit1 = lm(SURVIVED_bin ~ AGE + SEX + AGE:SEX, data = Covid_Data)
+summary(fit1)
 ```
 
 Your answer:
+
+I guess both gender and age will influence the outcome, I will also add the interaction term.
 
 ~~~
 Please write your answer in full sentences.
@@ -263,7 +266,7 @@ Your code:
 ```
 
 Your answer:
-
+Based on the model only have age, I consider that sex maybe also influence the survived, so I add this in the model, after viewing the model, I add the interaction term of age and sex. I found that all the predictors are significant, so I get this model.
 ~~~
 Please write your answer in full sentences.
 
@@ -279,7 +282,7 @@ Your code:
 ```
 
 Your answer:
-
+Age, sex and interaction between sex and age are seems to be important in deciding if a patient survives or not.
 ~~~
 Please write your answer in full sentences.
 
@@ -296,8 +299,10 @@ In this problem, you will develop a model to predict whether a given car gets hi
 
 Your code:
 ```{r,echo=TRUE}
-#
-#
+library(ISLR)
+data("Auto")
+median_mpg <- median(Auto$mpg)
+Auto$mpg01 <- ifelse(Auto$mpg > median_mpg, 1, 0)
 ```
 
 Your answer:
@@ -310,16 +315,34 @@ Please write your answer in full sentences.
 
 
 (b) Explore the data graphically in order to investigate the association between `mpg01` and the other features. Which other features seem most likely to be useful in predicting `mpg01`? Scatterplots and boxplots may be useful tools to answer this question. Describe your findings.
+```{r}
+library(ggplot2)
+
+ggplot(Auto, aes(x = horsepower, y = mpg01)) + 
+  geom_jitter(alpha = 0.5) + 
+  labs(x = "horsepower", y = "mpg01") +
+  theme_minimal()
+
+ggplot(Auto, aes(x = as.factor(mpg01), y = horsepower)) + 
+  geom_boxplot() + 
+  labs(x = "mpg01", y = "horsepower") +
+  theme_minimal()
+```
+In the graphs, I found that when mpg is greater than average, the horsepower is low, the average of horsepower is nearly 75. When mpg is less than average, the horsepower is high, the average of horsepower is nearly 125.
 
 (c) Split the data into a training set and a test set.
 
 Your code:
 ```{r,echo=TRUE}
-#
-#
+Autotrain <- Auto |>
+  filter(year <= 80)
+
+Autotest <- Auto |>
+  filter(year > 80)
 ```
 
 Your answer:
+I set all the data which year <= 80 as train data, and year > 80 as test data.
 
 ~~~
 Please write your answer in full sentences.
@@ -332,8 +355,11 @@ Please write your answer in full sentences.
 
 Your code:
 ```{r,echo=TRUE}
-#
-#
+library(MASS)
+fit2 <- lda(mpg01 ~ horsepower, data = Autotrain)
+predictions <- predict(fit2, Autotest)
+test_error <- mean(Autotest$mpg01 != predictions$class)
+print(test_error)
 ```
 
 Your answer:
@@ -349,8 +375,10 @@ Please write your answer in full sentences.
 
 Your code:
 ```{r,echo=TRUE}
-#
-#
+fit3 <- qda(mpg01 ~ horsepower, data = Autotrain)
+predictions2 <- predict(fit3, Autotest)
+test_error2 <- mean(Autotest$mpg01 != predictions2$class)
+print(test_error2)
 ```
 
 Your answer:
@@ -366,8 +394,19 @@ Please write your answer in full sentences.
 
 Your code:
 ```{r,echo=TRUE}
-#
-#
+fit4 <- glm(mpg01 ~ horsepower, data = Autotrain, family = "binomial")
+probabilities <- predict(fit4, newdata = Autotest, type = "response")
+predicted_classes <- ifelse(probabilities > 0.5, 1, 0)
+actual_classes <- Autotest$mpg01
+accuracy <- mean(predicted_classes == actual_classes)
+confusion_matrix <- table(Predicted = predicted_classes, Actual = actual_classes)
+precision <- confusion_matrix[2, 2] / sum(confusion_matrix[2, ])
+recall <- confusion_matrix[2, 2] / sum(confusion_matrix[, 2])
+f1_score <- 2 * (precision * recall) / (precision + recall)
+library(pROC)
+roc_obj <- roc(actual_classes, probabilities)
+auc <- auc(roc_obj)
+auc
 ```
 
 Your answer:
@@ -383,8 +422,12 @@ Please write your answer in full sentences.
 
 Your code:
 ```{r,echo=TRUE}
-#
-#
+library(e1071)
+fit5 <- naiveBayes(mpg01 ~ horsepower, data = Autotrain)
+probabilities <- predict(fit5, Autotest, type = "raw")
+predicted_classes <- apply(probabilities, 1, which.max) - 1
+test_error3 <- mean(Autotest$mpg01 != predicted_classes)
+print(test_error3)
 ```
 
 Your answer:
@@ -400,8 +443,12 @@ Please write your answer in full sentences.
 
 Your code:
 ```{r,echo=TRUE}
-#
-#
+train.X <- Autotrain$horsepower
+test.X <- Autotest$horsepower
+train.direction <- Autotrain$mpg01
+
+set.seed(1)
+knn.pred <- knn (train.X, test.X, train.direction, k = 1)
 ```
 
 Your answer:
